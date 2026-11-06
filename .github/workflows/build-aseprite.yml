@@ -29,11 +29,12 @@ jobs:
 
       - name: CMake Configure
         run: |
-          cmake -S . -B build -G Ninja -DLAF_BACKEND=skia -DSKIA_DIR=$PWD/skia -DSKIA_LIBRARY_DIR=$PWD/skia/out/Release-x64 -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake -S . -B build -G Ninja -DLAF_BACKEND=skia "-DSKIA_DIR=$PWD/skia" "-DSKIA_LIBRARY_DIR=$PWD/skia/out/Release-x64" -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         shell: pwsh
 
       - name: Build
         run: cmake --build build --target ${{ matrix.target }}
+        shell: pwsh
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
