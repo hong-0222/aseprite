@@ -3,7 +3,7 @@ on:
   workflow_dispatch:  # 仅手动触发，推送代码不会自动编译
 
 jobs:
-  build_aseprite_win: #
+  build_aseprite_win:
     runs-on: windows-latest
     strategy:
       matrix:
@@ -34,15 +34,3 @@ jobs:
 
       - name: Build
         run: cmake --build build --target ${{ matrix.target }}
-
-      - name: Pack artifacts
-        run: |
-          cd build/bin
-          Compress-Archive -Path .\* -DestinationPath ../aseprite-windows.zip
-        shell: pwsh
-
-      - name: Upload zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: aseprite-windows
-          path: build/aseprite-windows.zip
