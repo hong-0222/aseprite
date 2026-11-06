@@ -1,36 +1,28 @@
 name: Build Aseprite Windows
 on:
-  workflow_dispatch:  # 仅手动触发，推送代码不会自动编译
+  workflow_dispatch:
 
 jobs:
-  build_aseprite_win:
+  build:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        build_type: [RelWithDebInfo]
-        target: [gui]
     steps:
-      - name: Checkout Aseprite source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: v1.3
-          submodules: true
+          ref: V1.3
+          submodules: recursive
 
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
+      - uses: aseprite/get-ninja@main
 
-      - name: Download Skia (Aseprite v1.3 配套版本)
-        run: |
-          mkdir skia
-          cd skia
-          Invoke-WebRequest -Uri "https://github.com/aseprite/skia/releases/download/m102-861e4743af/Skia-Windows-Release-x64.zip" -OutFile skia.zip
-          Expand-Archive skia.zip -DestinationPath .
-        shell: pwsh
-
-      - name: CMake Configure
-        run: |
-          cmake -S . -B build -G Ninja -DLAF_BACKEND=skia -DSKIA_DIR=$PWD/skia -DSKIA_LIBRARY_DIR=$PWD/skia/out/Release-x64 -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        shell: pwsh
+      - uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x64
 
       - name: Build
-        run: cmake --build build --target ${{ matrix.target }}
+        shell: bash
+        run: bash build.sh --auto --norun -DENABLE_OPENSSL=OFF
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aseprite-Windows
+          path: build/bin
