@@ -1,58 +1,48 @@
 name: Build Aseprite Windows
 on:
-  push:
-    branches: [ v1.3 ]
-  workflow_dispatch:
-
-env:
-  SKIA_TAG: m124-0
-  SKIA_ZIP: Skia-Windows-x64.zip
+  workflow_dispatch:  # 仅手动触发，推送代码不会自动编译
 
 jobs:
-  build-windows:
+  build:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        build_type: [RelWithDebInfo]
+        target: [gui]
     steps:
-      - name: Checkout source
+      - name: Checkout Aseprite source
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          ref: v1.3
+          submodules: true
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Download Skia
+      - name: Download Skia (Aseprite v1.3 配套版本)
         run: |
-          curl -L -O https://github.com/aseprite/skia/releases/download/${{ env.SKIA_TAG }}/${{ env.SKIA_ZIP }}
-          unzip -q ${{ env.SKIA_ZIP }} -d skia
-
-      - name: CMake
-        run: |
-          mkdir build
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Release `
-          -DLAF_BACKEND=skia `
-          -DSKIA_DIR=${{ github.workspace }}\skia `
-          -DSKIA_LIBRARY_DIR=${{ github.workspace }}\skia\out\Release-x64 `
-          -DSKIA_LIBRARY=${{ github.workspace }}\skia\out\Release-x64\skia.lib `
-          -G Ninja ..
-
-      - name: Ninja build
-        run: |
-          cd build
-          ninja aseprite
-
-      - name: Prepare package
+          mkdir skia
+          cd skia
+          Invoke-WebRequest -Uri "https://github.com/aseprite/skia/releases/download/m102-861e4743af/Skia-Windows-Release-x64.zip" -OutFile skia.zip
+          Expand-Archive skia.zip -DestinationPath .
         shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path dist\Aseprite
-          Copy-Item build\bin\aseprite.exe dist\Aseprite\
-          Copy-Item build\bin\icudtl.dat dist\Aseprite\
-          Copy-Item build\bin\data dist\Aseprite\data -Recurse
-          Compress-Archive -Path dist\Aseprite\* -DestinationPath dist\Aseprite-win-x64.zip
 
-      - name: Upload artifact
+      - name: CMake Configure
+        run: |
+          cmake -S . -B build -G Ninja -DLAF_BACKEND=skia -DSKIA_DIR=$PWD/skia -DSKIA_LIBRARY_DIR=$PWD/skia/out/Release-x64 -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        shell: pwsh
+
+      - name: Build
+        run: cmake --build build --target ${{ matrix.target }}
+
+      - name: Pack artifacts
+        run: |
+          cd build/bin
+          Compress-Archive -Path .\* -DestinationPath ../aseprite-windows.zip
+        shell: pwsh
+
+      - name: Upload zip
         uses: actions/upload-artifact@v4
         with:
-          name: Aseprite-win-x64
-          path: dist\Aseprite-win-x64.zip
-          retention-days: 14
+          name: aseprite-windows
+          path: build/aseprite-windows.zip
