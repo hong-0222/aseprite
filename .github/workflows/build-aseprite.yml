@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Aseprite source
         uses: actions/checkout@v4
         with:
-          ref: v1.3
+          ref: V1.3
           submodules: true
 
       - name: Setup MSVC
