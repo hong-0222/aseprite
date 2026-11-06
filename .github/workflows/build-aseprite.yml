@@ -3,7 +3,7 @@ on:
   workflow_dispatch:  # 仅手动触发，推送代码不会自动编译
 
 jobs:
-  build:
+  build_aseprite_win:
     runs-on: windows-latest
     strategy:
       matrix:
